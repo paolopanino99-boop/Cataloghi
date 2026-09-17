@@ -71,22 +71,30 @@
         let allData = [];
         let loadedSheets = 0;
 
-        function parseSheetResponse(data) {
-            if (!data || !data.table || !data.table.rows) return [];
+        function parseSheetResponse(data, sheetName) {
+            if (!data || !data.table || !data.table.rows) {
+                console.warn(`Foglio ${sheetName}: Nessun dato trovato.`);
+                return [];
+            }
             const rows = data.table.rows;
-            const cols = data.table.cols.map(c => c.label ? c.label.toLowerCase().trim() : '');
 
             return rows.map(row => {
-                const obj = {};
-                row.c.forEach((cell, i) => {
-                    const colName = cols[i] || `col_${i}`;
-                    obj[colName] = cell && cell.v !== null ? cell.v : '';
-                });
-                return obj;
+                // Lettura diretta per posizione delle colonne:
+                // Colonna 0: Catalogo | Colonna 1: Nome | Colonna 2: Nazione | Colonna 3: Zona | Colonna 4: Descrizione
+                const getVal = (idx) => (row.c && row.c[idx] && row.c[idx].v !== null) ? String(row.c[idx].v).trim() : '';
+
+                return {
+                    catalogo: getVal(0),
+                    nome: getVal(1),
+                    nazione: getVal(2),
+                    zona: getVal(3),
+                    descrizione: getVal(4)
+                };
             }).filter(item => {
-                const nomeVal = String(item['nome'] || item['nome cantina'] || Object.values(item)[1] || '').trim();
-                // Filtra via righe vuote o l'intestazione errata "Nome Cantina" / "Nome"
-                if (!nomeVal || nomeVal.toLowerCase() === 'nome cantina' || nomeVal.toLowerCase() === 'nome') {
+                const cleanName = item.nome.toLowerCase();
+                
+                // Scarta righe vuote o eventuali righe di intestazione ripetute
+                if (!cleanName || cleanName === 'nome' || cleanName === 'nome cantina' || cleanName === 'catalogo') {
                     return false;
                 }
                 return true;
@@ -94,13 +102,13 @@
         }
 
         window.cbGiacimenti = function(data) {
-            const parsed = parseSheetResponse(data);
+            const parsed = parseSheetResponse(data, 'Giacimenti');
             allData = allData.concat(parsed);
             checkComplete();
         };
 
         window.cbDiretti = function(data) {
-            const parsed = parseSheetResponse(data);
+            const parsed = parseSheetResponse(data, 'Diretti');
             allData = allData.concat(parsed);
             checkComplete();
         };
@@ -108,6 +116,7 @@
         function checkComplete() {
             loadedSheets++;
             if (loadedSheets === 2) {
+                console.log("Totale cantine caricate con successo:", allData.length);
                 initApp(allData);
             }
         }
@@ -139,8 +148,8 @@
         }
 
         function populateDropdowns(data) {
-            const nazioni = [...new Set(data.map(item => item['nazione'] || item['paese'] || '').filter(Boolean))].sort();
-            const cataloghi = [...new Set(data.map(item => item['catalogo'] || Object.values(item)[0] || '').filter(Boolean))].sort();
+            const nazioni = [...new Set(data.map(item => item.nazione).filter(Boolean))].sort();
+            const cataloghi = [...new Set(data.map(item => item.catalogo).filter(Boolean))].sort();
 
             const nazSelect = document.getElementById('filterNazione');
             nazSelect.innerHTML = '<option value="">Tutte le nazioni</option>';
@@ -167,13 +176,9 @@
             const selectedCatalogo = document.getElementById('filterCatalogo').value;
 
             const filtered = allData.filter(item => {
-                const nomeCantina = String(item['nome'] || item['nome cantina'] || Object.values(item)[1] || '').toLowerCase();
-                const nazioneVal = String(item['nazione'] || item['paese'] || '');
-                const catalogoVal = String(item['catalogo'] || Object.values(item)[0] || '');
-
-                const matchSearch = !searchText || nomeCantina.includes(searchText);
-                const matchNaz = !selectedNazione || nazioneVal === selectedNazione;
-                const matchCat = !selectedCatalogo || catalogoVal === selectedCatalogo;
+                const matchSearch = !searchText || item.nome.toLowerCase().includes(searchText);
+                const matchNaz = !selectedNazione || item.nazione === selectedNazione;
+                const matchCat = !selectedCatalogo || item.catalogo === selectedCatalogo;
                 return matchSearch && matchNaz && matchCat;
             });
 
@@ -199,23 +204,243 @@
                 const card = document.createElement('div');
                 card.className = 'bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between hover:shadow-md transition-shadow relative';
 
-                const catalogo = item['catalogo'] || Object.values(item)[0] || 'Generale';
-                const nomeCantina = item['nome'] || item['nome cantina'] || Object.values(item)[1] || 'Cantina senza nome';
-                const nazione = item['nazione'] || item['paese'] || 'N/D';
-                const zona = item['zona'] || Object.values(item)[3] || 'Zona non specificata';
-                const descrizione = item['descrizione'] || Object.values(item)[5] || '';
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start mb-3">
+                            <span class="text-xs font-semibold text-rose-700 uppercase tracking-wider">${item.nazione}</span>
+                            <span class="bg-slate-100 text-slate-800 text-[11px] px-2.5 py-1 rounded-full font-medium">
+                                ${item.catalogo || 'Generale'}
+                            </span>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-1">${item.nome}</h3>
+                        ${item.zona ? `<p class="text-sm font-medium text-gray-600 mb-4">📍 ${item.zona}</p>` : ''}
+                        ${item.descrizione ? `<p class="text-sm text-gray-500 pt-3 border-t border-gray-100 leading-relaxed">${item.descrizione}</p>` : ''}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        loadSheetData();
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cataloghi Cantine - HORECA</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+    <!-- Header -->
+    <header class="bg-slate-900 text-white shadow-md py-6 px-4 mb-8">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center">
+            <h1 class="text-2xl font-bold tracking-wide">🍷 Portfolio Cantine HORECA</h1>
+            <p class="text-sm text-gray-400 mt-2 md:mt-0">Canale Horeca - Gestione Cataloghi Multi-scheda</p>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 pb-12">
+        
+        <!-- Sezione Filtri e Ricerca -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Cerca Cantina</label>
+                <input type="text" id="searchName" placeholder="Es. Corte Fusia..." class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Filtra per Nazione</label>
+                <select id="filterNazione" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none">
+                    <option value="">Tutte le nazioni</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Filtra per Catalogo</label>
+                <select id="filterCatalogo" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none">
+                    <option value="">Tutti i cataloghi</option>
+                </select>
+            </div>
+
+            <div>
+                <button id="resetBtn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg text-sm transition-colors">
+                    Resetta Filtri
+                </button>
+            </div>
+        </div>
+
+        <!-- Contatore Risultati -->
+        <div class="mb-4 text-sm text-gray-500 font-medium">
+            Cantine trovate: <span id="counter" class="font-bold text-slate-900">0</span>
+        </div>
+
+        <!-- Griglia Cantine -->
+        <div id="gridContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Le card verranno generate dinamicamente qui -->
+        </div>
+
+        <!-- Messaggio nessun risultato -->
+        <div id="noResults" class="hidden text-center py-16 text-gray-400">
+            Nessuna cantina corrisponde ai filtri selezionati.
+        </div>
+
+    </main>
+
+    <!-- Script -->
+    <script>
+        const SPREADSHEET_ID = '1TIFiheYx9fES0ZENGtDeZ6JCgY4Ll-qpRYdXTWZIqK0';
+        
+        let allData = [];
+        let loadedSheets = 0;
+
+        function parseSheetResponse(data, sheetName) {
+            if (!data || !data.table || !data.table.rows) {
+                console.warn(`Foglio ${sheetName}: Nessun dato trovato.`);
+                return [];
+            }
+            const rows = data.table.rows;
+
+            return rows.map(row => {
+                // Lettura diretta per posizione delle colonne:
+                // Colonna 0: Catalogo | Colonna 1: Nome | Colonna 2: Nazione | Colonna 3: Zona | Colonna 4: Descrizione
+                const getVal = (idx) => (row.c && row.c[idx] && row.c[idx].v !== null) ? String(row.c[idx].v).trim() : '';
+
+                return {
+                    catalogo: getVal(0),
+                    nome: getVal(1),
+                    nazione: getVal(2),
+                    zona: getVal(3),
+                    descrizione: getVal(4)
+                };
+            }).filter(item => {
+                const cleanName = item.nome.toLowerCase();
+                
+                // Scarta righe vuote o eventuali righe di intestazione ripetute
+                if (!cleanName || cleanName === 'nome' || cleanName === 'nome cantina' || cleanName === 'catalogo') {
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        window.cbGiacimenti = function(data) {
+            const parsed = parseSheetResponse(data, 'Giacimenti');
+            allData = allData.concat(parsed);
+            checkComplete();
+        };
+
+        window.cbDiretti = function(data) {
+            const parsed = parseSheetResponse(data, 'Diretti');
+            allData = allData.concat(parsed);
+            checkComplete();
+        };
+
+        function checkComplete() {
+            loadedSheets++;
+            if (loadedSheets === 2) {
+                console.log("Totale cantine caricate con successo:", allData.length);
+                initApp(allData);
+            }
+        }
+
+        function loadSheetData() {
+            const s1 = document.createElement('script');
+            s1.src = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=responseHandler:cbGiacimenti&sheet=Giacimenti&t=${Date.now()}`;
+            document.body.appendChild(s1);
+
+            const s2 = document.createElement('script');
+            s2.src = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=responseHandler:cbDiretti&sheet=Diretti&t=${Date.now()}`;
+            document.body.appendChild(s2);
+        }
+
+        function initApp(data) {
+            populateDropdowns(data);
+            renderCards(data);
+
+            document.getElementById('searchName').addEventListener('input', filterAndRender);
+            document.getElementById('filterNazione').addEventListener('change', filterAndRender);
+            document.getElementById('filterCatalogo').addEventListener('change', filterAndRender);
+            
+            document.getElementById('resetBtn').addEventListener('click', () => {
+                document.getElementById('searchName').value = '';
+                document.getElementById('filterNazione').value = '';
+                document.getElementById('filterCatalogo').value = '';
+                renderCards(allData);
+            });
+        }
+
+        function populateDropdowns(data) {
+            const nazioni = [...new Set(data.map(item => item.nazione).filter(Boolean))].sort();
+            const cataloghi = [...new Set(data.map(item => item.catalogo).filter(Boolean))].sort();
+
+            const nazSelect = document.getElementById('filterNazione');
+            nazSelect.innerHTML = '<option value="">Tutte le nazioni</option>';
+            nazioni.forEach(n => {
+                const opt = document.createElement('option');
+                opt.value = n;
+                opt.textContent = n;
+                nazSelect.appendChild(opt);
+            });
+
+            const catSelect = document.getElementById('filterCatalogo');
+            catSelect.innerHTML = '<option value="">Tutti i cataloghi</option>';
+            cataloghi.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = c;
+                catSelect.appendChild(opt);
+            });
+        }
+
+        function filterAndRender() {
+            const searchText = document.getElementById('searchName').value.toLowerCase();
+            const selectedNazione = document.getElementById('filterNazione').value;
+            const selectedCatalogo = document.getElementById('filterCatalogo').value;
+
+            const filtered = allData.filter(item => {
+                const matchSearch = !searchText || item.nome.toLowerCase().includes(searchText);
+                const matchNaz = !selectedNazione || item.nazione === selectedNazione;
+                const matchCat = !selectedCatalogo || item.catalogo === selectedCatalogo;
+                return matchSearch && matchNaz && matchCat;
+            });
+
+            renderCards(filtered);
+        }
+
+        function renderCards(data) {
+            const container = document.getElementById('gridContainer');
+            const noResults = document.getElementById('noResults');
+            const counter = document.getElementById('counter');
+            
+            container.innerHTML = '';
+            counter.textContent = data.length;
+
+            if (data.length === 0) {
+                noResults.classList.remove('hidden');
+                return;
+            } else {
+                noResults.classList.add('hidden');
+            }
+
+            data.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between hover:shadow-md transition-shadow relative';
 
                 card.innerHTML = `
                     <div>
                         <div class="flex justify-between items-start mb-3">
-                            <span class="text-xs font-semibold text-rose-700 uppercase tracking-wider">${nazione}</span>
+                            <span class="text-xs font-semibold text-rose-700 uppercase tracking-wider">${item.nazione}</span>
                             <span class="bg-slate-100 text-slate-800 text-[11px] px-2.5 py-1 rounded-full font-medium">
-                                ${catalogo}
+                                ${item.catalogo || 'Generale'}
                             </span>
                         </div>
-                        <h3 class="text-xl font-bold text-slate-900 mb-1">${nomeCantina}</h3>
-                        <p class="text-sm font-medium text-gray-600 mb-4">📍 ${zona}</p>
-                        ${descrizione ? `<p class="text-sm text-gray-500 pt-3 border-t border-gray-100 leading-relaxed">${descrizione}</p>` : ''}
+                        <h3 class="text-xl font-bold text-slate-900 mb-1">${item.nome}</h3>
+                        ${item.zona ? `<p class="text-sm font-medium text-gray-600 mb-4">📍 ${item.zona}</p>` : ''}
+                        ${item.descrizione ? `<p class="text-sm text-gray-500 pt-3 border-t border-gray-100 leading-relaxed">${item.descrizione}</p>` : ''}
                     </div>
                 `;
                 container.appendChild(card);
