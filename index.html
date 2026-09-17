@@ -20,30 +20,45 @@
     <main class="max-w-7xl mx-auto px-4 pb-12">
         
         <!-- Sezione Filtri e Ricerca -->
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            <div>
-                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Cerca Cantina</label>
-                <input type="text" id="searchName" placeholder="Es. Corte Fusia..." class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none">
-            </div>
-
-            <div>
-                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Filtra per Nazione</label>
-                <select id="filterNazione" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none">
-                    <option value="">Tutte le nazioni</option>
-                </select>
-            </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6 space-y-5">
             
-            <div>
-                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Filtra per Catalogo</label>
-                <select id="filterCatalogo" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none">
-                    <option value="">Tutti i cataloghi</option>
-                </select>
+            <!-- Ricerca e Zona -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Cerca Cantina</label>
+                    <input type="text" id="searchName" placeholder="Es. Corte Fusia..." class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Filtra per Zona</label>
+                    <select id="filterZona" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none">
+                        <option value="">Tutte le zone</option>
+                    </select>
+                </div>
             </div>
 
-            <div>
-                <button id="resetBtn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg text-sm transition-colors">
-                    Resetta Filtri
-                </button>
+            <!-- Pulsanti Nazione -->
+            <div class="pt-3 border-t border-gray-100">
+                <span class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Filtra per Nazione</span>
+                <div id="nationButtonsContainer" class="flex flex-wrap gap-2">
+                    <!-- I pulsanti nazione verranno generati dinamicamente qui -->
+                </div>
+            </div>
+
+            <!-- Pulsanti Catalogo e Reset -->
+            <div class="pt-3 border-t border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="w-full md:w-auto">
+                    <span class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Filtra per Catalogo</span>
+                    <div id="catalogButtonsContainer" class="flex flex-wrap gap-2">
+                        <!-- I pulsanti catalogo verranno generati dinamicamente qui -->
+                    </div>
+                </div>
+
+                <div class="w-full md:w-48 self-end">
+                    <button id="resetBtn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg text-sm transition-colors">
+                        Resetta Filtri
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -64,12 +79,26 @@
 
     </main>
 
+    <!-- Modale / Pop-up per la Descrizione -->
+    <div id="detailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 relative transform transition-all animate-in fade-in zoom-in duration-200">
+            <button id="closeModalBtn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full p-2 w-8 h-8 flex items-center justify-center transition-colors">
+                ✕
+            </button>
+            <div id="modalContent">
+                <!-- Il contenuto del pop-up viene inserito dinamicamente -->
+            </div>
+        </div>
+    </div>
+
     <!-- Script -->
     <script>
         const SPREADSHEET_ID = '1TIFiheYx9fES0ZENGtDeZ6JCgY4Ll-qpRYdXTWZIqK0';
         
         let allData = [];
         let loadedSheets = 0;
+        let activeCatalog = ''; // Stato catalogo selezionato
+        let activeNation = '';  // Stato nazione selezionata
 
         function parseSheetResponse(data, sheetName) {
             if (!data || !data.table || !data.table.rows) {
@@ -79,8 +108,6 @@
             const rows = data.table.rows;
 
             return rows.map(row => {
-                // Lettura diretta per posizione delle colonne:
-                // Colonna 0: Catalogo | Colonna 1: Nome | Colonna 2: Nazione | Colonna 3: Zona | Colonna 4: Descrizione
                 const getVal = (idx) => (row.c && row.c[idx] && row.c[idx].v !== null) ? String(row.c[idx].v).trim() : '';
 
                 return {
@@ -92,8 +119,6 @@
                 };
             }).filter(item => {
                 const cleanName = item.nome.toLowerCase();
-                
-                // Scarta righe vuote o eventuali righe di intestazione ripetute
                 if (!cleanName || cleanName === 'nome' || cleanName === 'nome cantina' || cleanName === 'catalogo') {
                     return false;
                 }
@@ -116,7 +141,6 @@
         function checkComplete() {
             loadedSheets++;
             if (loadedSheets === 2) {
-                console.log("Totale cantine caricate con successo:", allData.length);
                 initApp(allData);
             }
         }
@@ -132,280 +156,122 @@
         }
 
         function initApp(data) {
-            populateDropdowns(data);
+            populateFilters(data);
             renderCards(data);
 
             document.getElementById('searchName').addEventListener('input', filterAndRender);
-            document.getElementById('filterNazione').addEventListener('change', filterAndRender);
-            document.getElementById('filterCatalogo').addEventListener('change', filterAndRender);
+            document.getElementById('filterZona').addEventListener('change', filterAndRender);
             
             document.getElementById('resetBtn').addEventListener('click', () => {
                 document.getElementById('searchName').value = '';
-                document.getElementById('filterNazione').value = '';
-                document.getElementById('filterCatalogo').value = '';
+                document.getElementById('filterZona').value = '';
+                activeCatalog = '';
+                activeNation = '';
+                updateButtonsStyle('catalog-btn', activeCatalog);
+                updateButtonsStyle('nation-btn', activeNation);
                 renderCards(allData);
             });
+
+            // Chiusura modale
+            document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+            document.getElementById('detailModal').addEventListener('click', (e) => {
+                if (e.target.id === 'detailModal') closeModal();
+            });
         }
 
-        function populateDropdowns(data) {
+        function populateFilters(data) {
+            // Popola Zona (menu a tendina)
+            const zone = [...new Set(data.map(item => item.zona).filter(Boolean))].sort();
+            const zonaSelect = document.getElementById('filterZona');
+            zonaSelect.innerHTML = '<option value="">Tutte le zone</option>';
+            zone.forEach(z => {
+                const opt = document.createElement('option');
+                opt.value = z;
+                opt.textContent = z;
+                zonaSelect.appendChild(opt);
+            });
+
+            // Crea i Pulsanti Nazione
             const nazioni = [...new Set(data.map(item => item.nazione).filter(Boolean))].sort();
-            const cataloghi = [...new Set(data.map(item => item.catalogo).filter(Boolean))].sort();
+            const natContainer = document.getElementById('nationButtonsContainer');
+            natContainer.innerHTML = '';
 
-            const nazSelect = document.getElementById('filterNazione');
-            nazSelect.innerHTML = '<option value="">Tutte le nazioni</option>';
+            const allNatBtn = document.createElement('button');
+            allNatBtn.className = 'nation-btn px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors bg-slate-900 text-white';
+            allNatBtn.textContent = 'Tutte';
+            allNatBtn.dataset.nation = '';
+            allNatBtn.addEventListener('click', () => {
+                activeNation = '';
+                updateButtonsStyle('nation-btn', activeNation);
+                filterAndRender();
+            });
+            natContainer.appendChild(allNatBtn);
+
             nazioni.forEach(n => {
-                const opt = document.createElement('option');
-                opt.value = n;
-                opt.textContent = n;
-                nazSelect.appendChild(opt);
+                const btn = document.createElement('button');
+                btn.className = 'nation-btn px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200';
+                btn.textContent = n;
+                btn.dataset.nation = n;
+                btn.addEventListener('click', () => {
+                    activeNation = n;
+                    updateButtonsStyle('nation-btn', activeNation);
+                    filterAndRender();
+                });
+                natContainer.appendChild(btn);
             });
 
-            const catSelect = document.getElementById('filterCatalogo');
-            catSelect.innerHTML = '<option value="">Tutti i cataloghi</option>';
-            cataloghi.forEach(c => {
-                const opt = document.createElement('option');
-                opt.value = c;
-                opt.textContent = c;
-                catSelect.appendChild(opt);
+            // Crea i Pulsanti Catalogo
+            const cataloghi = [...new Set(data.map(item => item.catalogo).filter(Boolean))].sort();
+            const catContainer = document.getElementById('catalogButtonsContainer');
+            catContainer.innerHTML = '';
+
+            const allCatBtn = document.createElement('button');
+            allCatBtn.className = 'catalog-btn px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors bg-slate-900 text-white';
+            allCatBtn.textContent = 'Tutti';
+            allCatBtn.dataset.catalog = '';
+            allCatBtn.addEventListener('click', () => {
+                activeCatalog = '';
+                updateButtonsStyle('catalog-btn', activeCatalog);
+                filterAndRender();
             });
-        }
+            catContainer.appendChild(allCatBtn);
 
-        function filterAndRender() {
-            const searchText = document.getElementById('searchName').value.toLowerCase();
-            const selectedNazione = document.getElementById('filterNazione').value;
-            const selectedCatalogo = document.getElementById('filterCatalogo').value;
-
-            const filtered = allData.filter(item => {
-                const matchSearch = !searchText || item.nome.toLowerCase().includes(searchText);
-                const matchNaz = !selectedNazione || item.nazione === selectedNazione;
-                const matchCat = !selectedCatalogo || item.catalogo === selectedCatalogo;
-                return matchSearch && matchNaz && matchCat;
-            });
-
-            renderCards(filtered);
-        }
-
-        function renderCards(data) {
-            const container = document.getElementById('gridContainer');
-            const noResults = document.getElementById('noResults');
-            const counter = document.getElementById('counter');
-            
-            container.innerHTML = '';
-            counter.textContent = data.length;
-
-            if (data.length === 0) {
-                noResults.classList.remove('hidden');
-                return;
-            } else {
-                noResults.classList.add('hidden');
-            }
-
-            data.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between hover:shadow-md transition-shadow relative';
-
-                card.innerHTML = `
-                    <div>
-                        <div class="flex justify-between items-start mb-3">
-                            <span class="text-xs font-semibold text-rose-700 uppercase tracking-wider">${item.nazione}</span>
-                            <span class="bg-slate-100 text-slate-800 text-[11px] px-2.5 py-1 rounded-full font-medium">
-                                ${item.catalogo || 'Generale'}
-                            </span>
-                        </div>
-                        <h3 class="text-xl font-bold text-slate-900 mb-1">${item.nome}</h3>
-                        ${item.zona ? `<p class="text-sm font-medium text-gray-600 mb-4">📍 ${item.zona}</p>` : ''}
-                        ${item.descrizione ? `<p class="text-sm text-gray-500 pt-3 border-t border-gray-100 leading-relaxed">${item.descrizione}</p>` : ''}
-                    </div>
-                `;
-                container.appendChild(card);
+            cataloghi.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = 'catalog-btn px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200';
+                btn.textContent = cat;
+                btn.dataset.catalog = cat;
+                btn.addEventListener('click', () => {
+                    activeCatalog = cat;
+                    updateButtonsStyle('catalog-btn', activeCatalog);
+                    filterAndRender();
+                });
+                catContainer.appendChild(btn);
             });
         }
 
-        loadSheetData();
-    </script>
-</body>
-</html><!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cataloghi Cantine - HORECA</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-50 text-gray-800 font-sans">
-
-    <!-- Header -->
-    <header class="bg-slate-900 text-white shadow-md py-6 px-4 mb-8">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center">
-            <h1 class="text-2xl font-bold tracking-wide">🍷 Portfolio Cantine HORECA</h1>
-            <p class="text-sm text-gray-400 mt-2 md:mt-0">Canale Horeca - Gestione Cataloghi Multi-scheda</p>
-        </div>
-    </header>
-
-    <main class="max-w-7xl mx-auto px-4 pb-12">
-        
-        <!-- Sezione Filtri e Ricerca -->
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            <div>
-                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Cerca Cantina</label>
-                <input type="text" id="searchName" placeholder="Es. Corte Fusia..." class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none">
-            </div>
-
-            <div>
-                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Filtra per Nazione</label>
-                <select id="filterNazione" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none">
-                    <option value="">Tutte le nazioni</option>
-                </select>
-            </div>
-            
-            <div>
-                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Filtra per Catalogo</label>
-                <select id="filterCatalogo" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none">
-                    <option value="">Tutti i cataloghi</option>
-                </select>
-            </div>
-
-            <div>
-                <button id="resetBtn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg text-sm transition-colors">
-                    Resetta Filtri
-                </button>
-            </div>
-        </div>
-
-        <!-- Contatore Risultati -->
-        <div class="mb-4 text-sm text-gray-500 font-medium">
-            Cantine trovate: <span id="counter" class="font-bold text-slate-900">0</span>
-        </div>
-
-        <!-- Griglia Cantine -->
-        <div id="gridContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Le card verranno generate dinamicamente qui -->
-        </div>
-
-        <!-- Messaggio nessun risultato -->
-        <div id="noResults" class="hidden text-center py-16 text-gray-400">
-            Nessuna cantina corrisponde ai filtri selezionati.
-        </div>
-
-    </main>
-
-    <!-- Script -->
-    <script>
-        const SPREADSHEET_ID = '1TIFiheYx9fES0ZENGtDeZ6JCgY4Ll-qpRYdXTWZIqK0';
-        
-        let allData = [];
-        let loadedSheets = 0;
-
-        function parseSheetResponse(data, sheetName) {
-            if (!data || !data.table || !data.table.rows) {
-                console.warn(`Foglio ${sheetName}: Nessun dato trovato.`);
-                return [];
-            }
-            const rows = data.table.rows;
-
-            return rows.map(row => {
-                // Lettura diretta per posizione delle colonne:
-                // Colonna 0: Catalogo | Colonna 1: Nome | Colonna 2: Nazione | Colonna 3: Zona | Colonna 4: Descrizione
-                const getVal = (idx) => (row.c && row.c[idx] && row.c[idx].v !== null) ? String(row.c[idx].v).trim() : '';
-
-                return {
-                    catalogo: getVal(0),
-                    nome: getVal(1),
-                    nazione: getVal(2),
-                    zona: getVal(3),
-                    descrizione: getVal(4)
-                };
-            }).filter(item => {
-                const cleanName = item.nome.toLowerCase();
-                
-                // Scarta righe vuote o eventuali righe di intestazione ripetute
-                if (!cleanName || cleanName === 'nome' || cleanName === 'nome cantina' || cleanName === 'catalogo') {
-                    return false;
+        function updateButtonsStyle(className, activeValue) {
+            const buttons = document.querySelectorAll('.' + className);
+            buttons.forEach(btn => {
+                const val = btn.dataset.nation !== undefined ? btn.dataset.nation : btn.dataset.catalog;
+                if (val === activeValue) {
+                    btn.className = `${className} px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors bg-slate-900 text-white`;
+                } else {
+                    btn.className = `${className} px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200`;
                 }
-                return true;
-            });
-        }
-
-        window.cbGiacimenti = function(data) {
-            const parsed = parseSheetResponse(data, 'Giacimenti');
-            allData = allData.concat(parsed);
-            checkComplete();
-        };
-
-        window.cbDiretti = function(data) {
-            const parsed = parseSheetResponse(data, 'Diretti');
-            allData = allData.concat(parsed);
-            checkComplete();
-        };
-
-        function checkComplete() {
-            loadedSheets++;
-            if (loadedSheets === 2) {
-                console.log("Totale cantine caricate con successo:", allData.length);
-                initApp(allData);
-            }
-        }
-
-        function loadSheetData() {
-            const s1 = document.createElement('script');
-            s1.src = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=responseHandler:cbGiacimenti&sheet=Giacimenti&t=${Date.now()}`;
-            document.body.appendChild(s1);
-
-            const s2 = document.createElement('script');
-            s2.src = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=responseHandler:cbDiretti&sheet=Diretti&t=${Date.now()}`;
-            document.body.appendChild(s2);
-        }
-
-        function initApp(data) {
-            populateDropdowns(data);
-            renderCards(data);
-
-            document.getElementById('searchName').addEventListener('input', filterAndRender);
-            document.getElementById('filterNazione').addEventListener('change', filterAndRender);
-            document.getElementById('filterCatalogo').addEventListener('change', filterAndRender);
-            
-            document.getElementById('resetBtn').addEventListener('click', () => {
-                document.getElementById('searchName').value = '';
-                document.getElementById('filterNazione').value = '';
-                document.getElementById('filterCatalogo').value = '';
-                renderCards(allData);
-            });
-        }
-
-        function populateDropdowns(data) {
-            const nazioni = [...new Set(data.map(item => item.nazione).filter(Boolean))].sort();
-            const cataloghi = [...new Set(data.map(item => item.catalogo).filter(Boolean))].sort();
-
-            const nazSelect = document.getElementById('filterNazione');
-            nazSelect.innerHTML = '<option value="">Tutte le nazioni</option>';
-            nazioni.forEach(n => {
-                const opt = document.createElement('option');
-                opt.value = n;
-                opt.textContent = n;
-                nazSelect.appendChild(opt);
-            });
-
-            const catSelect = document.getElementById('filterCatalogo');
-            catSelect.innerHTML = '<option value="">Tutti i cataloghi</option>';
-            cataloghi.forEach(c => {
-                const opt = document.createElement('option');
-                opt.value = c;
-                opt.textContent = c;
-                catSelect.appendChild(opt);
             });
         }
 
         function filterAndRender() {
             const searchText = document.getElementById('searchName').value.toLowerCase();
-            const selectedNazione = document.getElementById('filterNazione').value;
-            const selectedCatalogo = document.getElementById('filterCatalogo').value;
+            const selectedZona = document.getElementById('filterZona').value;
 
             const filtered = allData.filter(item => {
                 const matchSearch = !searchText || item.nome.toLowerCase().includes(searchText);
-                const matchNaz = !selectedNazione || item.nazione === selectedNazione;
-                const matchCat = !selectedCatalogo || item.catalogo === selectedCatalogo;
-                return matchSearch && matchNaz && matchCat;
+                const matchNat = !activeNation || item.nazione === activeNation;
+                const matchZona = !selectedZona || item.zona === selectedZona;
+                const matchCat = !activeCatalog || item.catalogo === activeCatalog;
+                return matchSearch && matchNat && matchZona && matchCat;
             });
 
             renderCards(filtered);
@@ -428,7 +294,7 @@
 
             data.forEach(item => {
                 const card = document.createElement('div');
-                card.className = 'bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between hover:shadow-md transition-shadow relative';
+                card.className = 'bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between hover:shadow-md transition-shadow relative cursor-pointer group';
 
                 card.innerHTML = `
                     <div>
@@ -438,13 +304,47 @@
                                 ${item.catalogo || 'Generale'}
                             </span>
                         </div>
-                        <h3 class="text-xl font-bold text-slate-900 mb-1">${item.nome}</h3>
-                        ${item.zona ? `<p class="text-sm font-medium text-gray-600 mb-4">📍 ${item.zona}</p>` : ''}
-                        ${item.descrizione ? `<p class="text-sm text-gray-500 pt-3 border-t border-gray-100 leading-relaxed">${item.descrizione}</p>` : ''}
+                        <h3 class="text-xl font-bold text-slate-900 mb-1 group-hover:text-rose-700 transition-colors">${item.nome}</h3>
+                        ${item.zona ? `<p class="text-sm font-medium text-gray-600">📍 ${item.zona}</p>` : ''}
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-gray-50 flex justify-end">
+                        <span class="text-xs font-medium text-gray-400 group-hover:text-slate-900 transition-colors">Tocca per dettagli →</span>
                     </div>
                 `;
+
+                card.addEventListener('click', () => {
+                    openModal(item);
+                });
+
                 container.appendChild(card);
             });
+        }
+
+        function openModal(item) {
+            const modal = document.getElementById('detailModal');
+            const content = document.getElementById('modalContent');
+
+            content.innerHTML = `
+                <div class="flex justify-between items-start mb-4 pr-6">
+                    <span class="text-xs font-semibold text-rose-700 uppercase tracking-wider">${item.nazione}</span>
+                    <span class="bg-slate-900 text-white text-xs px-3 py-1 rounded-full font-medium">
+                        ${item.catalogo || 'Generale'}
+                    </span>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-900 mb-2">${item.nome}</h2>
+                ${item.zona ? `<p class="text-sm font-medium text-gray-600 mb-4">📍 ${item.zona}</p>` : ''}
+                <div class="mt-4 pt-4 border-t border-gray-100">
+                    <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Descrizione</h4>
+                    <p class="text-sm text-gray-700 leading-relaxed">${item.descrizione || 'Nessuna descrizione disponibile per questa cantina.'}</p>
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('detailModal');
+            modal.classList.add('hidden');
         }
 
         loadSheetData();
