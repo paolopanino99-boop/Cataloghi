@@ -3,35 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cataloghi Cantine - HORECA</title>
+    <title>Cataloghi Cantine - Viticoltura Erotica</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Poppins & Plus Jakarta Sans -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        veBrand: '#c2410c',      /* Caldo tono terracotta / mattone */
+                        veBrandHover: '#9a3412',
+                        veDark: '#291811'
+                    },
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        poppins: ['Poppins', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans">
+<body class="bg-[#54b2f8] text-gray-800 font-sans min-h-screen">
 
-    <!-- Header -->
-    <header class="bg-slate-900 text-white shadow-md py-6 px-4 mb-8">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center">
-            <h1 class="text-2xl font-bold tracking-wide">🍷 Portfolio Cantine HORECA</h1>
-            <p class="text-sm text-gray-400 mt-2 md:mt-0">Canale Horeca - Gestione Cataloghi Multi-scheda</p>
+    <!-- Header con Logotipo e Slogan (sfondo #f9fb04) -->
+    <header class="bg-[#f9fb04] border-b-2 border-black/10 py-6 px-4 mb-8 shadow-md">
+        <div class="max-w-7xl mx-auto flex flex-col items-center justify-center text-center">
+            <!-- Immagine del Logotipo -->
+            <img src="https://lh3.googleusercontent.com/d/1YObZA27aih0oEZ3R3tqk7vWG3AUrMggV=s800" alt="Viticoltura Erotica" class="h-14 md:h-16 w-auto object-contain mb-2">
+            <p class="text-sm md:text-base font-semibold tracking-wide text-gray-900 italic">"Tutte, ma proprio tutte le cantine."</p>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-4 pb-12">
         
         <!-- Sezione Filtri e Ricerca -->
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6 space-y-5">
+        <div class="bg-white/95 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-white/40 mb-6 space-y-5">
             
             <!-- Ricerca e Zona -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Cerca Cantina</label>
-                    <input type="text" id="searchName" placeholder="Es. Corte Fusia..." class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none">
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Cerca Cantina</label>
+                    <input type="text" id="searchName" placeholder="Es. Corte Fusia..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-veBrand focus:outline-none transition-all">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Filtra per Zona</label>
-                    <select id="filterZona" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none">
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Filtra per Zona</label>
+                    <select id="filterZona" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-veBrand focus:outline-none transition-all">
                         <option value="">Tutte le zone</option>
                     </select>
                 </div>
@@ -39,23 +59,23 @@
 
             <!-- Pulsanti Nazione -->
             <div class="pt-3 border-t border-gray-100">
-                <span class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Filtra per Nazione</span>
+                <span class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Filtra per Nazione</span>
                 <div id="nationButtonsContainer" class="flex flex-wrap gap-2">
-                    <!-- I pulsanti nazione verranno generati dinamicamente qui -->
+                    <!-- Generati dinamicamente -->
                 </div>
             </div>
 
             <!-- Pulsanti Catalogo e Reset -->
             <div class="pt-3 border-t border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div class="w-full md:w-auto">
-                    <span class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Filtra per Catalogo</span>
+                    <span class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Filtra per Catalogo</span>
                     <div id="catalogButtonsContainer" class="flex flex-wrap gap-2">
-                        <!-- I pulsanti catalogo verranno generati dinamicamente qui -->
+                        <!-- Generati dinamicamente -->
                     </div>
                 </div>
 
                 <div class="w-full md:w-48 self-end">
-                    <button id="resetBtn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg text-sm transition-colors">
+                    <button id="resetBtn" class="w-full bg-orange-100/70 hover:bg-orange-200 text-orange-900 font-semibold py-2.5 px-4 rounded-xl text-sm transition-colors shadow-xs">
                         Resetta Filtri
                     </button>
                 </div>
@@ -63,30 +83,30 @@
         </div>
 
         <!-- Contatore Risultati -->
-        <div class="mb-4 text-sm text-gray-500 font-medium">
-            Cantine trovate: <span id="counter" class="font-bold text-slate-900">0</span>
+        <div class="mb-4 text-sm text-white font-semibold px-1 drop-shadow-xs">
+            Cantine trovate: <span id="counter" class="font-bold text-yellow-200">0</span>
         </div>
 
         <!-- Griglia Cantine -->
         <div id="gridContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Le card verranno generate dinamicamente qui -->
+            <!-- Card generate dinamicamente -->
         </div>
 
         <!-- Messaggio nessun risultato -->
-        <div id="noResults" class="hidden text-center py-16 text-gray-400">
+        <div id="noResults" class="hidden text-center py-16 text-white font-medium text-lg drop-shadow-xs">
             Nessuna cantina corrisponde ai filtri selezionati.
         </div>
 
     </main>
 
     <!-- Modale / Pop-up per la Descrizione -->
-    <div id="detailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 relative transform transition-all animate-in fade-in zoom-in duration-200">
-            <button id="closeModalBtn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full p-2 w-8 h-8 flex items-center justify-center transition-colors">
+    <div id="detailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 relative transform transition-all border border-[#f991e8] font-poppins">
+            <button id="closeModalBtn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 bg-orange-50 hover:bg-orange-100 rounded-full p-2 w-9 h-9 flex items-center justify-center transition-colors">
                 ✕
             </button>
             <div id="modalContent">
-                <!-- Il contenuto del pop-up viene inserito dinamicamente -->
+                <!-- Contenuto pop-up -->
             </div>
         </div>
     </div>
@@ -97,8 +117,8 @@
         
         let allData = [];
         let loadedSheets = 0;
-        let activeCatalog = ''; // Stato catalogo selezionato
-        let activeNation = '';  // Stato nazione selezionata
+        let activeCatalog = '';
+        let activeNation = '';
 
         function parseSheetResponse(data, sheetName) {
             if (!data || !data.table || !data.table.rows) {
@@ -172,7 +192,6 @@
                 renderCards(allData);
             });
 
-            // Chiusura modale
             document.getElementById('closeModalBtn').addEventListener('click', closeModal);
             document.getElementById('detailModal').addEventListener('click', (e) => {
                 if (e.target.id === 'detailModal') closeModal();
@@ -180,7 +199,6 @@
         }
 
         function populateFilters(data) {
-            // Popola Zona (menu a tendina)
             const zone = [...new Set(data.map(item => item.zona).filter(Boolean))].sort();
             const zonaSelect = document.getElementById('filterZona');
             zonaSelect.innerHTML = '<option value="">Tutte le zone</option>';
@@ -191,13 +209,12 @@
                 zonaSelect.appendChild(opt);
             });
 
-            // Crea i Pulsanti Nazione
             const nazioni = [...new Set(data.map(item => item.nazione).filter(Boolean))].sort();
             const natContainer = document.getElementById('nationButtonsContainer');
             natContainer.innerHTML = '';
 
             const allNatBtn = document.createElement('button');
-            allNatBtn.className = 'nation-btn px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors bg-slate-900 text-white';
+            allNatBtn.className = 'nation-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all bg-veBrand text-white shadow-xs';
             allNatBtn.textContent = 'Tutte';
             allNatBtn.dataset.nation = '';
             allNatBtn.addEventListener('click', () => {
@@ -209,7 +226,7 @@
 
             nazioni.forEach(n => {
                 const btn = document.createElement('button');
-                btn.className = 'nation-btn px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200';
+                btn.className = 'nation-btn px-4 py-1.5 rounded-full text-xs font-semibold transition-all bg-gray-100 text-gray-700 hover:bg-orange-100';
                 btn.textContent = n;
                 btn.dataset.nation = n;
                 btn.addEventListener('click', () => {
@@ -220,13 +237,12 @@
                 natContainer.appendChild(btn);
             });
 
-            // Crea i Pulsanti Catalogo
             const cataloghi = [...new Set(data.map(item => item.catalogo).filter(Boolean))].sort();
             const catContainer = document.getElementById('catalogButtonsContainer');
             catContainer.innerHTML = '';
 
             const allCatBtn = document.createElement('button');
-            allCatBtn.className = 'catalog-btn px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors bg-slate-900 text-white';
+            allCatBtn.className = 'catalog-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all bg-veBrand text-white shadow-xs';
             allCatBtn.textContent = 'Tutti';
             allCatBtn.dataset.catalog = '';
             allCatBtn.addEventListener('click', () => {
@@ -238,7 +254,7 @@
 
             cataloghi.forEach(cat => {
                 const btn = document.createElement('button');
-                btn.className = 'catalog-btn px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200';
+                btn.className = 'catalog-btn px-4 py-1.5 rounded-full text-xs font-semibold transition-all bg-gray-100 text-gray-700 hover:bg-orange-100';
                 btn.textContent = cat;
                 btn.dataset.catalog = cat;
                 btn.addEventListener('click', () => {
@@ -255,9 +271,9 @@
             buttons.forEach(btn => {
                 const val = btn.dataset.nation !== undefined ? btn.dataset.nation : btn.dataset.catalog;
                 if (val === activeValue) {
-                    btn.className = `${className} px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors bg-slate-900 text-white`;
+                    btn.className = `${className} px-4 py-1.5 rounded-full text-xs font-bold transition-all bg-veBrand text-white shadow-xs`;
                 } else {
-                    btn.className = `${className} px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200`;
+                    btn.className = `${className} px-4 py-1.5 rounded-full text-xs font-semibold transition-all bg-gray-100 text-gray-700 hover:bg-orange-100`;
                 }
             });
         }
@@ -294,21 +310,21 @@
 
             data.forEach(item => {
                 const card = document.createElement('div');
-                card.className = 'bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between hover:shadow-md transition-shadow relative cursor-pointer group';
+                card.className = 'bg-white rounded-2xl shadow-md border-2 border-[#f991e8] p-6 flex flex-col justify-between hover:shadow-lg transition-all relative cursor-pointer group font-poppins';
 
                 card.innerHTML = `
                     <div>
                         <div class="flex justify-between items-start mb-3">
-                            <span class="text-xs font-semibold text-rose-700 uppercase tracking-wider">${item.nazione}</span>
-                            <span class="bg-slate-100 text-slate-800 text-[11px] px-2.5 py-1 rounded-full font-medium">
+                            <span class="text-xs font-bold text-veBrand uppercase tracking-wider">${item.nazione}</span>
+                            <span class="bg-orange-50 text-orange-900 text-[11px] px-3 py-1 rounded-full font-semibold">
                                 ${item.catalogo || 'Generale'}
                             </span>
                         </div>
-                        <h3 class="text-xl font-bold text-slate-900 mb-1 group-hover:text-rose-700 transition-colors">${item.nome}</h3>
-                        ${item.zona ? `<p class="text-sm font-medium text-gray-600">📍 ${item.zona}</p>` : ''}
+                        <h3 class="text-xl font-bold text-gray-900 mb-1 group-hover:text-veBrand transition-colors">${item.nome}</h3>
+                        ${item.zona ? `<p class="text-sm font-medium text-gray-500">📍 ${item.zona}</p>` : ''}
                     </div>
-                    <div class="mt-4 pt-3 border-t border-gray-50 flex justify-end">
-                        <span class="text-xs font-medium text-gray-400 group-hover:text-slate-900 transition-colors">Tocca per dettagli →</span>
+                    <div class="mt-4 pt-3 border-t border-gray-100 flex justify-end">
+                        <span class="text-xs font-semibold text-orange-400 group-hover:text-veBrand transition-colors">Tocca per dettagli →</span>
                     </div>
                 `;
 
@@ -326,15 +342,15 @@
 
             content.innerHTML = `
                 <div class="flex justify-between items-start mb-4 pr-6">
-                    <span class="text-xs font-semibold text-rose-700 uppercase tracking-wider">${item.nazione}</span>
-                    <span class="bg-slate-900 text-white text-xs px-3 py-1 rounded-full font-medium">
+                    <span class="text-xs font-bold text-veBrand uppercase tracking-wider">${item.nazione}</span>
+                    <span class="bg-veBrand text-white text-xs px-3.5 py-1 rounded-full font-semibold shadow-xs">
                         ${item.catalogo || 'Generale'}
                     </span>
                 </div>
-                <h2 class="text-2xl font-bold text-slate-900 mb-2">${item.nome}</h2>
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">${item.nome}</h2>
                 ${item.zona ? `<p class="text-sm font-medium text-gray-600 mb-4">📍 ${item.zona}</p>` : ''}
                 <div class="mt-4 pt-4 border-t border-gray-100">
-                    <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Descrizione</h4>
+                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Descrizione</h4>
                     <p class="text-sm text-gray-700 leading-relaxed">${item.descrizione || 'Nessuna descrizione disponibile per questa cantina.'}</p>
                 </div>
             `;
