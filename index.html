@@ -13,7 +13,7 @@
             theme: {
                 extend: {
                     colors: {
-                        veBrand: '#c2410c',      /* Caldo tono terracotta / mattone */
+                        veBrand: '#c2410c',
                         veBrandHover: '#9a3412',
                         veDark: '#291811'
                     },
@@ -33,20 +33,20 @@
         <div class="max-w-7xl mx-auto flex flex-col items-center justify-center text-center">
             <!-- Immagine del Logotipo -->
             <img src="https://lh3.googleusercontent.com/d/1YObZA27aih0oEZ3R3tqk7vWG3AUrMggV=s800" alt="Viticoltura Erotica" class="h-14 md:h-16 w-auto object-contain mb-2">
-            <p class="text-sm md:text-base font-semibold tracking-wide text-gray-900 italic">"Tutte, ma proprio tutte le cantine."</p>
+            <p class="text-sm md:text-base font-semibold tracking-wide text-gray-900 italic">"Tutto, proprio tutto il vino che vendo, ma sopratutto quello che non riesco a vendere"</p>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-4 pb-12">
         
         <!-- Sezione Filtri e Ricerca -->
-        <div class="bg-white/95 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-white/40 mb-6 space-y-5">
+        <div class="bg-white/95 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-white/40 mb-8 space-y-5">
             
             <!-- Ricerca e Zona -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Cerca Cantina</label>
-                    <input type="text" id="searchName" placeholder="Es. Corte Fusia..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-veBrand focus:outline-none transition-all">
+                    <input type="text" id="searchName" placeholder="Es. nome, vitigno, parola chiave..." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-veBrand focus:outline-none transition-all">
                 </div>
 
                 <div>
@@ -82,11 +82,6 @@
             </div>
         </div>
 
-        <!-- Contatore Risultati -->
-        <div class="mb-4 text-sm text-white font-semibold px-1 drop-shadow-xs">
-            Cantine trovate: <span id="counter" class="font-bold text-yellow-200">0</span>
-        </div>
-
         <!-- Griglia Cantine -->
         <div id="gridContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <!-- Card generate dinamicamente -->
@@ -114,11 +109,35 @@
     <!-- Script -->
     <script>
         const SPREADSHEET_ID = '1TIFiheYx9fES0ZENGtDeZ6JCgY4Ll-qpRYdXTWZIqK0';
+        const SHEET_NAMES = ['Giacimenti', 'Diretti', 'COVIBIO'];
         
         let allData = [];
         let loadedSheets = 0;
         let activeCatalog = '';
         let activeNation = '';
+
+        const COLOR_PALETTE = [
+            { bg: 'bg-rose-100', text: 'text-rose-900', border: 'border-rose-300', activeBg: 'bg-rose-600', activeText: 'text-white' },
+            { bg: 'bg-amber-100', text: 'text-amber-900', border: 'border-amber-300', activeBg: 'bg-amber-600', activeText: 'text-white' },
+            { bg: 'bg-emerald-100', text: 'text-emerald-900', border: 'border-emerald-300', activeBg: 'bg-emerald-600', activeText: 'text-white' },
+            { bg: 'bg-sky-100', text: 'text-sky-900', border: 'border-sky-300', activeBg: 'bg-sky-600', activeText: 'text-white' },
+            { bg: 'bg-purple-100', text: 'text-purple-900', border: 'border-purple-300', activeBg: 'bg-purple-600', activeText: 'text-white' },
+            { bg: 'bg-pink-100', text: 'text-pink-900', border: 'border-pink-300', activeBg: 'bg-pink-600', activeText: 'text-white' },
+            { bg: 'bg-teal-100', text: 'text-teal-900', border: 'border-teal-300', activeBg: 'bg-teal-600', activeText: 'text-white' },
+            { bg: 'bg-indigo-100', text: 'text-indigo-900', border: 'border-indigo-300', activeBg: 'bg-indigo-600', activeText: 'text-white' }
+        ];
+
+        const nationColorMap = {};
+        const catalogColorMap = {};
+
+        function getColorMapping(value, mapObj) {
+            if (!value) return { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-300', activeBg: 'bg-gray-800', activeText: 'text-white' };
+            if (!mapObj[value]) {
+                const assignedIndex = Object.keys(mapObj).length % COLOR_PALETTE.length;
+                mapObj[value] = COLOR_PALETTE[assignedIndex];
+            }
+            return mapObj[value];
+        }
 
         function parseSheetResponse(data, sheetName) {
             if (!data || !data.table || !data.table.rows) {
@@ -135,7 +154,8 @@
                     nome: getVal(1),
                     nazione: getVal(2),
                     zona: getVal(3),
-                    descrizione: getVal(4)
+                    descrizione: getVal(4),
+                    tags: getVal(5)
                 };
             }).filter(item => {
                 const cleanName = item.nome.toLowerCase();
@@ -146,33 +166,27 @@
             });
         }
 
-        window.cbGiacimenti = function(data) {
-            const parsed = parseSheetResponse(data, 'Giacimenti');
-            allData = allData.concat(parsed);
-            checkComplete();
-        };
-
-        window.cbDiretti = function(data) {
-            const parsed = parseSheetResponse(data, 'Diretti');
-            allData = allData.concat(parsed);
-            checkComplete();
-        };
+        SHEET_NAMES.forEach(sheetName => {
+            window['cb' + sheetName] = function(data) {
+                const parsed = parseSheetResponse(data, sheetName);
+                allData = allData.concat(parsed);
+                checkComplete();
+            };
+        });
 
         function checkComplete() {
             loadedSheets++;
-            if (loadedSheets === 2) {
+            if (loadedSheets === SHEET_NAMES.length) {
                 initApp(allData);
             }
         }
 
         function loadSheetData() {
-            const s1 = document.createElement('script');
-            s1.src = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=responseHandler:cbGiacimenti&sheet=Giacimenti&t=${Date.now()}`;
-            document.body.appendChild(s1);
-
-            const s2 = document.createElement('script');
-            s2.src = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=responseHandler:cbDiretti&sheet=Diretti&t=${Date.now()}`;
-            document.body.appendChild(s2);
+            SHEET_NAMES.forEach(sheetName => {
+                const script = document.createElement('script');
+                script.src = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=responseHandler:cb${sheetName}&sheet=${sheetName}&t=${Date.now()}`;
+                document.body.appendChild(script);
+            });
         }
 
         function initApp(data) {
@@ -187,8 +201,7 @@
                 document.getElementById('filterZona').value = '';
                 activeCatalog = '';
                 activeNation = '';
-                updateButtonsStyle('catalog-btn', activeCatalog);
-                updateButtonsStyle('nation-btn', activeNation);
+                updateAllButtonsStyle();
                 renderCards(allData);
             });
 
@@ -214,24 +227,25 @@
             natContainer.innerHTML = '';
 
             const allNatBtn = document.createElement('button');
-            allNatBtn.className = 'nation-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all bg-veBrand text-white shadow-xs';
+            allNatBtn.className = 'nation-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all bg-slate-900 text-white shadow-xs';
             allNatBtn.textContent = 'Tutte';
             allNatBtn.dataset.nation = '';
             allNatBtn.addEventListener('click', () => {
                 activeNation = '';
-                updateButtonsStyle('nation-btn', activeNation);
+                updateAllButtonsStyle();
                 filterAndRender();
             });
             natContainer.appendChild(allNatBtn);
 
             nazioni.forEach(n => {
+                const col = getColorMapping(n, nationColorMap);
                 const btn = document.createElement('button');
-                btn.className = 'nation-btn px-4 py-1.5 rounded-full text-xs font-semibold transition-all bg-gray-100 text-gray-700 hover:bg-orange-100';
+                btn.className = `nation-btn px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${col.bg} ${col.text} hover:opacity-80`;
                 btn.textContent = n;
                 btn.dataset.nation = n;
                 btn.addEventListener('click', () => {
                     activeNation = n;
-                    updateButtonsStyle('nation-btn', activeNation);
+                    updateAllButtonsStyle();
                     filterAndRender();
                 });
                 natContainer.appendChild(btn);
@@ -242,38 +256,53 @@
             catContainer.innerHTML = '';
 
             const allCatBtn = document.createElement('button');
-            allCatBtn.className = 'catalog-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all bg-veBrand text-white shadow-xs';
+            allCatBtn.className = 'catalog-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all bg-slate-900 text-white shadow-xs';
             allCatBtn.textContent = 'Tutti';
             allCatBtn.dataset.catalog = '';
             allCatBtn.addEventListener('click', () => {
                 activeCatalog = '';
-                updateButtonsStyle('catalog-btn', activeCatalog);
+                updateAllButtonsStyle();
                 filterAndRender();
             });
             catContainer.appendChild(allCatBtn);
 
             cataloghi.forEach(cat => {
+                const col = getColorMapping(cat, catalogColorMap);
                 const btn = document.createElement('button');
-                btn.className = 'catalog-btn px-4 py-1.5 rounded-full text-xs font-semibold transition-all bg-gray-100 text-gray-700 hover:bg-orange-100';
+                btn.className = `catalog-btn px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${col.bg} ${col.text} hover:opacity-80`;
                 btn.textContent = cat;
                 btn.dataset.catalog = cat;
                 btn.addEventListener('click', () => {
                     activeCatalog = cat;
-                    updateButtonsStyle('catalog-btn', activeCatalog);
+                    updateAllButtonsStyle();
                     filterAndRender();
                 });
                 catContainer.appendChild(btn);
             });
         }
 
-        function updateButtonsStyle(className, activeValue) {
-            const buttons = document.querySelectorAll('.' + className);
-            buttons.forEach(btn => {
-                const val = btn.dataset.nation !== undefined ? btn.dataset.nation : btn.dataset.catalog;
-                if (val === activeValue) {
-                    btn.className = `${className} px-4 py-1.5 rounded-full text-xs font-bold transition-all bg-veBrand text-white shadow-xs`;
+        function updateAllButtonsStyle() {
+            document.querySelectorAll('.nation-btn').forEach(btn => {
+                const val = btn.dataset.nation;
+                if (val === activeNation) {
+                    btn.className = 'nation-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all bg-slate-900 text-white shadow-xs';
+                } else if (val === '') {
+                    btn.className = 'nation-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all ' + (activeNation === '' ? 'bg-slate-900 text-white shadow-xs' : 'bg-gray-100 text-gray-700 hover:bg-gray-200');
                 } else {
-                    btn.className = `${className} px-4 py-1.5 rounded-full text-xs font-semibold transition-all bg-gray-100 text-gray-700 hover:bg-orange-100`;
+                    const col = getColorMapping(val, nationColorMap);
+                    btn.className = `nation-btn px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${col.bg} ${col.text} hover:opacity-80`;
+                }
+            });
+
+            document.querySelectorAll('.catalog-btn').forEach(btn => {
+                const val = btn.dataset.catalog;
+                if (val === activeCatalog) {
+                    btn.className = 'catalog-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all bg-slate-900 text-white shadow-xs';
+                } else if (val === '') {
+                    btn.className = 'catalog-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all ' + (activeCatalog === '' ? 'bg-slate-900 text-white shadow-xs' : 'bg-gray-100 text-gray-700 hover:bg-gray-200');
+                } else {
+                    const col = getColorMapping(val, catalogColorMap);
+                    btn.className = `catalog-btn px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${col.bg} ${col.text} hover:opacity-80`;
                 }
             });
         }
@@ -283,7 +312,9 @@
             const selectedZona = document.getElementById('filterZona').value;
 
             const filtered = allData.filter(item => {
-                const matchSearch = !searchText || item.nome.toLowerCase().includes(searchText);
+                const searchPool = `${item.nome} ${item.tags} ${item.zona} ${item.nazione}`.toLowerCase();
+                
+                const matchSearch = !searchText || searchPool.includes(searchText);
                 const matchNat = !activeNation || item.nazione === activeNation;
                 const matchZona = !selectedZona || item.zona === selectedZona;
                 const matchCat = !activeCatalog || item.catalogo === activeCatalog;
@@ -296,10 +327,8 @@
         function renderCards(data) {
             const container = document.getElementById('gridContainer');
             const noResults = document.getElementById('noResults');
-            const counter = document.getElementById('counter');
             
             container.innerHTML = '';
-            counter.textContent = data.length;
 
             if (data.length === 0) {
                 noResults.classList.remove('hidden');
@@ -312,11 +341,14 @@
                 const card = document.createElement('div');
                 card.className = 'bg-white rounded-2xl shadow-md border-2 border-[#f991e8] p-6 flex flex-col justify-between hover:shadow-lg transition-all relative cursor-pointer group font-poppins';
 
+                const natCol = getColorMapping(item.nazione, nationColorMap);
+                const catCol = getColorMapping(item.catalogo, catalogColorMap);
+
                 card.innerHTML = `
                     <div>
-                        <div class="flex justify-between items-start mb-3">
-                            <span class="text-xs font-bold text-veBrand uppercase tracking-wider">${item.nazione}</span>
-                            <span class="bg-orange-50 text-orange-900 text-[11px] px-3 py-1 rounded-full font-semibold">
+                        <div class="flex justify-between items-start mb-3 gap-2">
+                            <span class="text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ${natCol.bg} ${natCol.text}">${item.nazione || 'N/D'}</span>
+                            <span class="text-[11px] px-3 py-1 rounded-full font-semibold ${catCol.bg} ${catCol.text}">
                                 ${item.catalogo || 'Generale'}
                             </span>
                         </div>
@@ -329,21 +361,21 @@
                 `;
 
                 card.addEventListener('click', () => {
-                    openModal(item);
+                    openModal(item, natCol, catCol);
                 });
 
                 container.appendChild(card);
             });
         }
 
-        function openModal(item) {
+        function openModal(item, natCol, catCol) {
             const modal = document.getElementById('detailModal');
             const content = document.getElementById('modalContent');
 
             content.innerHTML = `
-                <div class="flex justify-between items-start mb-4 pr-6">
-                    <span class="text-xs font-bold text-veBrand uppercase tracking-wider">${item.nazione}</span>
-                    <span class="bg-veBrand text-white text-xs px-3.5 py-1 rounded-full font-semibold shadow-xs">
+                <div class="flex justify-between items-start mb-4 pr-6 gap-2">
+                    <span class="text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ${natCol.bg} ${natCol.text}">${item.nazione || 'N/D'}</span>
+                    <span class="text-xs px-3.5 py-1 rounded-full font-semibold shadow-xs ${catCol.bg} ${catCol.text}">
                         ${item.catalogo || 'Generale'}
                     </span>
                 </div>
